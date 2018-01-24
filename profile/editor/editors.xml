@@ -1,0 +1,34 @@
+<editors>
+  <!-- ISY Bool UOM -->
+  <editor id="ACN_BOOL">
+    <range uom="2" />
+  </editor>
+  <!-- ISY Index UOM with custom labels in NLS -->
+  <editor id="ACN_RUNSTATE">
+    <range uom="25" subset="1-12" nls="IX_ACN_RUNSTATE" />
+  </editor>
+  <!-- ISY Index UOM with custom labels in NLS -->
+  <editor id="ACN_OPMODE">
+    <range uom="25" subset="0-2" nls="IX_ACN_OPMODE" />
+  </editor>
+  <!-- ISY Index UOM with custom labels in NLS -->
+  <editor id="ACN_LOWBAT">
+    <range uom="25" subset="0,1" nls="IX_ACN_LOWBAT" />
+  </editor>
+  <!-- ISY Voltatge UOM -->
+  <editor id="ACN_BATLVL">
+    <range uom="72" min="0" max="12" prec="2" />
+  </editor>
+  <!-- ISY Index UOM with custom labels in NLS -->
+  <editor id="AEQ_ST">
+    <range uom="25" subset="0,1" nls="IX_AEQ_ST" />
+  </editor>
+  <!-- ISY Index UOM with custom labels in NLS -->
+  <editor id="ATC_ST">
+    <range uom="25" subset="0-2" nls="IX_ATC_ST" />
+  </editor>
+  <!-- ISY Farenheit UOM with Jandy/Zodiac Aqualink limits -->
+  <editor id="ATC_TEMP">
+    <range uom="17" min="34" max="104" step="1" prec="0" />
+  </editor>
+</editors>

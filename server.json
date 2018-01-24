@@ -1,0 +1,19 @@
+{
+    "name": "Autelis-Jandy",
+    "docs": "https://github.com/Goose66/autelis-polyglotv2",
+    "type": "python3",
+    "executable": "autelis-poly.py",
+    "install": "install.sh",
+    "description": "Accesses the Austelis Pool Control module for Jandy/Zodiac Aqualink to allow ISY 994i to control pool functions.",
+    "notice": "Jandy® and Aqualink® are registered trademarks of Zodiac International, S.A.S.U.",
+    "credits": [
+        {
+            "title": "autelis-poly: a Polyglot NodeServer for Autelis Pool Control Integration",
+            "author": "W. Randy King",
+            "version": "1.0.0",
+            "date": "January 23, 2018",
+            "source": "https://github.com/Goose66/autelis-polyglotv2",
+            "license": "https://github.com/Goose66/autelis-polyglotv2/master/LICENSE"
+        }
+    ]
+}

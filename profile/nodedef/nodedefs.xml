@@ -1,0 +1,47 @@
+<nodeDefs>
+  <nodeDef id="CONTROLLER" nls="ACN">
+    <sts>
+      <st id="ST" editor="ACN_BOOL" />
+      <st id="GV0" editor="ACN_RUNSTATE" />
+      <st id="GV1" editor="ACN_OPMODE" /> 
+      <st id="CLITEMP" editor="ATC_TEMP" /> 
+      <st id="GV2" editor="ACN_LOWBAT" /> 
+      <st id="BATLVL" editor="ACN_BATLVL" />
+    </sts>
+    <cmds>
+      <sends />
+      <accepts>
+        <cmd id="QUERY" />
+      </accepts>
+    </cmds>
+  </nodeDef>
+  <nodeDef id="EQUIPMENT" nls="AEQ">
+    <sts>
+      <st id="ST" editor="AEQ_ST" />
+    </sts>
+    <cmds>
+      <sends />
+      <accepts>
+        <cmd id="DON" />
+        <cmd id="DOF" />
+      </accepts>
+    </cmds>
+  </nodeDef>
+  <nodeDef id="TEMP_CONTROL" nls="ATC">
+    <sts>
+      <st id="ST" editor="ATC_ST" />
+      <st id="CLISPH" editor="ATC_TEMP" />
+      <st id="CLITEMP" editor="ATC_TEMP" />    
+    </sts>
+    <cmds>
+      <sends />
+      <accepts>
+        <cmd id="DON" />
+        <cmd id="DOF" />
+        <cmd id="SET_TEMP">
+          <p id="" editor="ATC_TEMP" init="CLISPH" />
+        </cmd>
+      </accepts>
+    </cmds>
+  </nodeDef>
+</nodeDefs>
