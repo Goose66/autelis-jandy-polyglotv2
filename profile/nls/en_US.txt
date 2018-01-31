@@ -2,6 +2,7 @@ ND-CONTROLLER-NAME = Pool Controller
 ND-CONTROLLER-ICON = GenericCtl
 ST-ACN-ST-NAME = NodeServer Online
 ST-ACN-GV0-NAME = Interface State
+IX_ACN_RUNSTATE-0 = Autelis Device Not Responding
 IX_ACN_RUNSTATE-1 = Not Connected
 IX_ACN_RUNSTATE-2 = Startup Seq. (2)
 IX_ACN_RUNSTATE-3 = Startup Seq. (3)

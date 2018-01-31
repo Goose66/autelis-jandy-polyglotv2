@@ -1,11 +1,11 @@
 <editors>
   <!-- ISY Bool UOM -->
   <editor id="ACN_BOOL">
-    <range uom="2" />
+    <range uom="2" subset="0,1" />
   </editor>
   <!-- ISY Index UOM with custom labels in NLS -->
   <editor id="ACN_RUNSTATE">
-    <range uom="25" subset="1-12" nls="IX_ACN_RUNSTATE" />
+    <range uom="25" subset="0-12" nls="IX_ACN_RUNSTATE" />
   </editor>
   <!-- ISY Index UOM with custom labels in NLS -->
   <editor id="ACN_OPMODE">

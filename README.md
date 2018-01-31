@@ -17,3 +17,10 @@ Instructions for Local (Co-resident with Polyglot) installation:
     pollinginterval - polling interval in seconds (defaults to 60)
     ignoresolar - ignore Solar Heat settings (defaults to False)
 ```
+Here are the known issues with this version:
+
+1. The nodes are added with the node address as the name (description). You need to change the names (especially for the AUX relays) to the name of the pool device controlled by the node.
+2. The equipment nodes only take DON and DOF commands, so if you put the nodes in a Managed Scene and do a Fast On or Fast Off, the node will not respond.
+3. If you turn spa and spaht or pool and poolht on right after one another (such as putting both in a scene), the second one does not take. There has to be a 2 or 3 second delay between spa and spaht or pool and poolht to make sure both are processed, so it will require a program. I have logged this with Autelis.
+4. The Node Server only adds nodes that are returning values, so it should only add nodes for those equipment and temp_controls specific to your installation, except for solar heat which it seems to add regardless. You can add a flag to the custom parameters to ignore solar heat (see above).
+5. The Node Server currently doesn't support dimming AUX relays, colored lights, or one touch nodes (I don't have these installed to test).

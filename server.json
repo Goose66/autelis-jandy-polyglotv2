@@ -10,8 +10,8 @@
         {
             "title": "autelis-poly: a Polyglot NodeServer for Autelis Pool Control Integration",
             "author": "W. Randy King",
-            "version": "1.0.0",
-            "date": "January 23, 2018",
+            "version": "1.0.1",
+            "date": "January 31, 2018",
             "source": "https://github.com/Goose66/autelis-polyglotv2",
             "license": "https://github.com/Goose66/autelis-polyglotv2/master/LICENSE"
         }

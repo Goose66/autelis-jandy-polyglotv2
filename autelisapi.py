@@ -18,8 +18,8 @@ _AUTELIS_OFF_VALUE = 0
 
 # Parameters for Pool Control TCP Serial Port interface
 _CONTROLLER_TCP_PORT = 6000
-_TEST_TCP_MSG = "#OPMODE?\r"
-_TEST_RTN_SUCCESS = "!00 OPMODE="
+_TEST_TCP_MSG = b"#OPMODE?\r"
+_TEST_RTN_SUCCESS = b"!00 OPMODE="
 _STATUS_UPDATE_MATCH_PATTERN = r"!00 ([A-Z0-9]+)=([A-Z0-9]+) ?[FC]?\r\n"
 _BUFFER_SIZE = 32
 
@@ -58,7 +58,7 @@ class AutelisInterface(object):
 
         # Allow timeout and connection errors to be ignored - log and return no XML
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
-            self._logger.warn("HTTP GET in get_status() failed - %s", str(e))
+            self._logger.warning("HTTP GET in get_status() failed - %s", str(e))
             return None
         except:
             self._logger.error("Unexpected error occured - %s", sys.exc_info()[0])
@@ -68,7 +68,7 @@ class AutelisInterface(object):
         if statusXML.tag == "response":
             return statusXML
         else:
-            self._logger.warn("%s returned invalid XML in response", response.url)
+            self._logger.warning("%s returned invalid XML in response", response.url)
             return None
 
     # Set the named attribute of the named element to the specified value
@@ -92,7 +92,7 @@ class AutelisInterface(object):
 
         # Allow timeout and connection errors to be ignored - log and return false
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
-            self._logger.warn("HTTP GET in send_command() failed - %s", str(e))
+            self._logger.warning("HTTP GET in send_command() failed - %s", str(e))
             return False
         except:
             self._logger.error("Unexpected error occured - %s", sys.exc_info()[0])
@@ -129,7 +129,7 @@ def status_listener(controllerAddr, statusUpdateCallback=None, logger=None):
     try:
         conn.connect((controllerAddr, _CONTROLLER_TCP_PORT))
     except (socket.error, socket.herror, socket.gaierror) as e:
-        logger.error("Unable to establish TCP connection with Pool Controller. Socket error %d - %s", e[0], e[1])
+        logger.error("Unable to establish TCP connection with Pool Controller. Socket error: %s", str(e))
         return False
     except:
         raise
@@ -154,7 +154,7 @@ def status_listener(controllerAddr, statusUpdateCallback=None, logger=None):
                 conn.close()
                 return False
             except socket.error as e:
-                logger.error("TCP Connection to Pool Controller unexpectedly closed. Socket error %d - %s", e[0], e[1])
+                logger.error("TCP Connection to Pool Controller unexpectedly closed. Socket error: %s", str(e))
                 conn.close()
                 return False
             except:
@@ -163,12 +163,12 @@ def status_listener(controllerAddr, statusUpdateCallback=None, logger=None):
 
             # check returned data for success
             if not _TEST_RTN_SUCCESS in msg:
-                logger.error("Pool Controller returned invalid data ('%s') - connection closed.", msg)
+                logger.error("Pool Controller returned invalid data ('%s') - connection closed.", msg.decode("utf-8"))
                 conn.close()
                 return False
 
         except socket.error as e:
-            logger.error("TCP Connection to Pool Controller unexpectedly closed. Socket error %d - %s", e[0], e[1])
+            logger.error("TCP Connection to Pool Controller unexpectedly closed. Socket error: %s", str(e))
             conn.close()
             return False
         except:
@@ -179,7 +179,7 @@ def status_listener(controllerAddr, statusUpdateCallback=None, logger=None):
         if len(msg) > 0:
 
             # See if the status update message matches our regex pattern
-            matches = re.match(_STATUS_UPDATE_MATCH_PATTERN, msg)
+            matches = re.match(_STATUS_UPDATE_MATCH_PATTERN, msg.decode("utf-8"))
             if matches:
 
                 # pull the pertinent data out of the message
@@ -191,10 +191,10 @@ def status_listener(controllerAddr, statusUpdateCallback=None, logger=None):
                 # call status update callback function
                 if not statusUpdateCallback is None:
                     if not statusUpdateCallback(cmd_to_element(cmd), val_to_text(val)):
-                        logger.warn("Unhandled status update from Pool Controller - %s", cmd)
+                        logger.warning("Unhandled status update from Pool Controller - %s", cmd)
 
             else:
-                logger.warn("Invalid status message received from Pool Controller - %s", msg)
+                logger.warning("Invalid status message received from Pool Controller - %s", msg.decode("utf-8"))
 
 # Convert the TCP Serial Port Interface command words to
 # element tags matching the HTTP Command Interface

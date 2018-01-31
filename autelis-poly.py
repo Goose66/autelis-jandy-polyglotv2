@@ -162,7 +162,7 @@ class Controller(polyinterface.Controller):
         # check the monitor thread to see if it is still running
         if self.threadMonitor and not self.threadMonitor.is_alive():
 
-            _LOGGER.warn("Status monitoring thread has terminated - restarting.")
+            _LOGGER.warning("Status monitoring thread has terminated - restarting.")
 
             # Restart the monitor thread
             self.threadMonitor = threading.Thread(target=autelisapi.status_listener, args=(self.autelis.controllerAddr, self.set_node_state, _LOGGER))
@@ -206,6 +206,7 @@ class Controller(polyinterface.Controller):
 
         if statusXML is None:
             _LOGGER.warning("No XML returned from get_status().")
+            self.setDriver("GV0", 0, report)
 
         else:
 
