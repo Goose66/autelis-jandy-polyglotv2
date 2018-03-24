@@ -10,8 +10,11 @@ import polyinterface
 
 _ISY_BOOL_UOM = 2 # Used for reporting status values for Controller node
 _ISY_INDEX_UOM = 25 # Index UOM for custom states (must match editor/NLS in profile):
-_ISY_TEMP_F_UOM = 17 # UOM for temperatures
-_ISY_VOLT_UOM = 72
+_ISY_TEMP_F_UOM = 17 # UOM for temperatures (farenheit)
+_ISY_TEMP_C_UOM = 4 # UOM for temperatures (celcius)
+_ISY_THERMO_MODE_UOM = 67 # UOM for thermostat mode
+_ISY_THERMO_HCS_UOM = 66 # UOM for thermostat heat/cool state
+_ISY_VOLT_UOM = 72 # UOM for Voltage
 
 _VBAT_CONST = 0.01464
 
@@ -52,6 +55,26 @@ class TempControl(polyinterface.Node):
 
     id = "TEMP_CONTROL"
 
+    # Override init to handle temp units
+    def __init__(self, controller, primary, address, name, tempUnit):
+        self.set_temp_unit(tempUnit)
+        super(TempControl, self).__init__(controller, primary, address, name)
+        
+
+    # Setup node_def_id and drivers for tempUnit
+    def set_temp_unit(self, tempUnit):
+        
+        # set the id of the node for the ISY to use from the nodedef
+        if tempUnit == "C":
+            self.id = "TEMP_CONTROL_C"
+        else:
+            self.id = "TEMP_CONTROL"
+            
+        # update the drivers in the node
+        for driver in self.drivers:
+            if driver["driver"] in ("ST", "CLISPH", "CLISPC"):
+                driver["uom"] = _ISY_TEMP_C_UOM if tempUnit == "C" else _ISY_TEMP_F_UOM
+
     # Enable heat - TCP connection monitoring will pick up status change
     def cmd_don(self, command):
         if self.controller.autelis.on(self.address):
@@ -88,20 +111,58 @@ class TempControl(polyinterface.Node):
         else:
             _LOGGER.warning("Call to Pool Controller in SET_TEMP command handler failed for node %s.", self.address)
 
+    # Set set point temperature - TCP connection monitoring will pick up status change
+    def cmd_set_mode(self, command):
+        
+        value = int(command.get("value"))
+
+        # determine model element to change based on the node address
+        if value == 1: # Heat
+            if self.controller.autelis.on(self.address):
+                pass
+            else:
+                _LOGGER.warning("Call to Pool Controller in SET_MODE command handler failed for node %s.", self.address)
+        else:
+            if self.controller.autelis.off(self.address):
+                pass
+            else:
+                _LOGGER.warning("Call to Pool Controller in SET_MODE command handler failed for node %s.", self.address)
+
+    # Update the thermostat mode and HCS drivers from the state value from the Aqualink controller
+    def update_mode_drivers(self, state, report=True):
+
+        # state is 0 (Disabled)
+        if state == "0":
+            self.setDriver("CLIMD", 0, report)
+            self.setDriver("CLIHCS", 0, report)
+
+        # state is 1 (Enabled)
+        elif state == "1":
+            self.setDriver("CLIMD", 1, report)
+            self.setDriver("CLIHCS", 0, report)
+
+        # state is 2 (Heating)
+        elif state == "2":
+            self.setDriver("CLIMD", 1, report)
+            self.setDriver("CLIHCS", 1, report)
+
     # Run update function in parent before reporting driver values
     def query(self):
         self.controller.update_node_states(False)
         self.reportDrivers()
 
     drivers = [
-        {"driver": "ST", "value": 0, "uom": _ISY_INDEX_UOM},
+        {"driver": "ST", "value": 0, "uom": _ISY_TEMP_F_UOM},
         {"driver": "CLISPH", "value": 0, "uom": _ISY_TEMP_F_UOM},
-        {"driver": "CLITEMP", "value": 0, "uom": _ISY_TEMP_F_UOM}
+        {"driver": "CLIMD", "value": 0, "uom": _ISY_THERMO_MODE_UOM},
+        {"driver": "CLIHCS", "value": 0, "uom": _ISY_THERMO_HCS_UOM},
+        {"driver": "CLISPC", "value": 0, "uom": _ISY_TEMP_F_UOM}
     ]
     commands = {
         "DON": cmd_don,
         "DOF": cmd_dof,
-        "SET_TEMP": cmd_set_temp
+        "SET_MODE": cmd_set_mode,
+        "SET_SPH": cmd_set_temp
     }
 
 # Node class for controller
@@ -116,9 +177,35 @@ class Controller(polyinterface.Controller):
         self.pollingInterval = 60
         self.ignoresolar = False
         self.lastPoll = 0
-        self.tempUnits = "F"
+        self.currentTempUnit = "F"
         self.threadMonitor = None
 
+    # Setup node_def_id and drivers for temp unit
+    def set_temp_unit(self, tempUnit):
+        
+        # Update the drivers to the new temp unit
+        for driver in self.drivers:
+            if driver["driver"] == "CLITEMP":
+                driver["uom"] = _ISY_TEMP_C_UOM if tempUnit == "C" else _ISY_TEMP_F_UOM
+
+        # update the node definition in the Polyglot DB
+        self.updateNode(self)
+
+        self.currentTempUnit = tempUnit
+       
+    # change the temp units utilized by the nodeserver
+    def change_temp_units(self, newTempUnit):
+         
+        # update the temp unit for the temp control nodes
+        for addr in self.nodes:
+            node = self.nodes[addr]
+            if node.id in ("TEMP_CONTROL", "TEMP_CONTROL_C"):
+               node.set_temp_unit(newTempUnit) 
+               self.updateNode(node) # Calls ISY REST change command to change node_def_id
+        
+        # update the temp unit for the controller node
+        self.set_temp_unit(newTempUnit)
+        
     # Start the nodeserver
     def start(self):
 
@@ -147,10 +234,9 @@ class Controller(polyinterface.Controller):
         # create a object for the autelis interface
         self.autelis = autelisapi.AutelisInterface(ip, username, password, _LOGGER)
 
-        # setup the nodes from the autelis pool controller
-        self.update_node_states(True) # Report driver values
-        self.lastPoll = time.time()
-
+        #  setup the nodes from the autelis pool controller
+        self.discover_nodes() 
+    
         # setup a thread for monitoring status updates from the Pool Controller
         self.threadMonitor = threading.Thread(target=autelisapi.status_listener, args=(ip, self.set_node_state, _LOGGER))
         self.threadMonitor.daemon = True
@@ -193,11 +279,52 @@ class Controller(polyinterface.Controller):
         self.parent.update_node_states(False)
 
         # report drivers of all nodes
-        for node in self.nodes:
-            self.nodes[node].reportDrivers()
+        for addr in self.nodes:
+            self.nodes[addr].reportDrivers()
 
-        return True
+    # Create nodes for all devices from the autelis interface
+    def discover_nodes(self):
 
+        # get the status XML from the autelis device
+        statusXML = self.autelis.get_status()
+
+        if statusXML is None:
+            _LOGGER.error("No status XML returned from Autelis device on startup.")
+            sys.exit("Failure on intial communications with Autelis device.")   
+
+        else:
+
+            # Get the temp units and update the controller node if needed
+            temp = statusXML.find("temp")
+            tempUnit = temp.find("tempunits").text
+            if tempUnit != self.currentTempUnit: # If not "F"              
+                self.set_temp_unit(tempUnit)
+ 
+            # Iterate equipment child elements and process each
+            equipment = statusXML.find("equipment")
+            for element in list(equipment):
+
+                # Only process elements that have text values (assuming blank
+                # elements are not part of the installed/configured equipment).
+                # Also ignore solar heat if configuration flag is not set
+                if not ((element.text is None) or (element.tag == "solarht" and self.ignoresolar)):
+
+                    addr = element.tag
+
+                    # Process temp control elements
+                    if addr in ("poolht", "poolht2", "spaht", "solarht"):
+
+                        # Create the TEMP_CONTROL node with the correct temp units
+                        tempNode = TempControl(self, self.address, addr, addr, tempUnit)
+                        self.addNode(tempNode)
+
+                    # Process others (pumps and aux relays)
+                    else:
+
+                        # Create the EQUIPMENT node
+                        equipNode = Equipment(self, self.address, addr, addr)
+                        self.addNode(equipNode)
+                        
     # Creates or updates the state values of all nodes from the autelis interface
     def update_node_states(self, report=True):
 
@@ -215,8 +342,11 @@ class Controller(polyinterface.Controller):
             equipment = statusXML.find("equipment")
             temp = statusXML.find("temp")
 
-            # Get processing elements
-            self.tempUnits = temp.find("tempunits").text
+            # Check for change in temp units on device
+            # Note: Should be picked up in TCP connection monitoring but just in case 
+            tempUnit = temp.find("tempunits").text
+            if tempUnit != self.currentTempUnit:
+                self.change_temp_units(tempUnit)
 
             # Get the element values for the controller node
             runstate = int(system.find("runstate").text)
@@ -235,16 +365,16 @@ class Controller(polyinterface.Controller):
             # Iterate equipment child elements and process each
             for element in list(equipment):
 
-                # Only process elements that have text values (assuming blank
-                # elements are not part of the installed/configured equipment).
-                # Also ignore solar heat if configuration flag is not set
-                if not ((element.text is None) or (element.tag == "solarht" and self.ignoresolar)):
+                addr = element.tag
+                state = element.text
 
-                    addr = element.tag
-                    state = int(element.text)
+                # Process elements that have a corresponding node
+                if addr in self.nodes:
+
+                    node = self.nodes[addr]
 
                     # Process temp control elements
-                    if addr in ["poolht", "poolht2", "spaht", "solarht"]:
+                    if addr in ("poolht", "poolht2", "spaht", "solarht"):
 
                         if addr == "poolht":
                             setPoint = int(temp.find("poolsp").text)
@@ -259,35 +389,21 @@ class Controller(polyinterface.Controller):
                             setPoint = int(temp.find("poolsp").text)
                             currentTemp = int(temp.find("solartemp").text)
 
-                        # Create the TEMP_CONTROL node if it doesn't exist
-                        if addr in self.nodes:
-                            tempNode = self.nodes[addr]
-                        else:
-                            tempNode = TempControl(self, self.address, addr, addr)
-                            self.addNode(tempNode)
-
                         # Update node driver values
-                        tempNode.setDriver("ST", state, report)
-                        tempNode.setDriver("CLISPH", setPoint, report)
-                        tempNode.setDriver("CLITEMP", currentTemp, report)
+                        node.setDriver("ST", currentTemp, report)
+                        node.setDriver("CLISPH", setPoint, report)
+                        node.update_mode_drivers(state, report)
 
                     # Process others (pumps and aux relays)
                     else:
 
-                        # Create the EQUIPMENT node if it doesn't exist
-                        if addr in self.nodes:
-                            equipNode = self.nodes[addr]
-                        else:
-                            equipNode = Equipment(self, self.address, addr, addr)
-                            self.addNode(equipNode)
-
-                        # Update node driver values
-                        equipNode.setDriver("ST", state, report)
+                        node.setDriver("ST", int(state), report)
 
     # Callback function for TCP connection monitoring thread
     def set_node_state(self, element, value):
 
         retVal = False
+
         # handle system and temp control elements specifically
         if element == "runstate":
             self.setDriver("GV0", int(value))
@@ -319,25 +435,31 @@ class Controller(polyinterface.Controller):
                 retVal = True
         elif element == "pooltemp":
             if "poolht" in self.nodes:
-                self.nodes["poolht"].setDriver("CLITEMP", int(value))
+                self.nodes["poolht"].setDriver("ST", int(value))
                 retVal = True
             if "poolht2" in self.nodes:
-                self.nodes["poolht2"].setDriver("CLITEMP", int(value))
+                self.nodes["poolht2"].setDriver("ST", int(value))
                 retVal = True
         elif element == "spatemp":
             if "spaht" in self.nodes:
-                self.nodes["spaht"].setDriver("CLITEMP", int(value))
+                self.nodes["spaht"].setDriver("ST", int(value))
                 retVal = True
         elif element == "airtemp":
             self.setDriver("CLITEMP", int(value))
             retVal = True
         elif element == "solartemp":
             if "solarht" in self.nodes:
-                self.nodes["solarht"].setDriver("CLITEMP", int(value))
+                self.nodes["solarht"].setDriver("ST", int(value))
                 retVal = True
-        elif element == "tempunits":
-            self.tempUnits = value
+        elif element == "tempunits": # Process temp unit change
+            if self.currentTempUnit != value:
+                self.change_temp_units(value)
             retVal = True
+        elif element in ["poolht", "poolht2", "spaht", "solarht"]:
+            if element in self.nodes:
+                self.nodes[element].update_mode_drivers(value)
+                retVal = True
+
         else:
 
             # update state for node with address of element tag

@@ -32,16 +32,14 @@ IX_AEQ_ST-1 = On
 CMD-AEQ-DON-NAME = On
 CMD-AEQ-DOF-NAME = Off
 ND-TEMP_CONTROL-NAME = Heater Control
-ND-TEMP_CONTROL-ICON = TempSensor
-ST-ATC-ST-NAME = Current State
-IX_ATC_ST-0 = Off
-IX_ATC_ST-1 = Enabled
-IX_ATC_ST-2 = On
+ND-TEMP_CONTROL-ICON = Thermostat
+ND-TEMP_CONTROL_C-NAME = Heater Control
+ND-TEMP_CONTROL_C-ICON = Thermostat
+ST-ATC-ST-NAME = Current Temperature
 ST-ATC-CLISPH-NAME = Setpoint
 CMDPN-ATC-CLISPH-NAME = Heater Setpoint
-ST-ATC-CLITEMP-NAME = Current Temperature
 CMD-ATC-DON-NAME = Enable
 CMD-ATC-DOF-NAME = Disable
-CMD-ATC-SET_TEMP-NAME = Setpoint
-
+CMD-ATC-SET_MODE-NAME = Mode
+CMD-ATC-SET_SPH-NAME = Setpoint
 

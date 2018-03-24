@@ -15,7 +15,7 @@
   <editor id="ACN_LOWBAT">
     <range uom="25" subset="0,1" nls="IX_ACN_LOWBAT" />
   </editor>
-  <!-- ISY Voltatge UOM -->
+  <!-- ISY Voltage UOM -->
   <editor id="ACN_BATLVL">
     <range uom="72" min="0" max="12" prec="2" />
   </editor>
@@ -23,12 +23,28 @@
   <editor id="AEQ_ST">
     <range uom="25" subset="0,1" nls="IX_AEQ_ST" />
   </editor>
-  <!-- ISY Index UOM with custom labels in NLS -->
-  <editor id="ATC_ST">
-    <range uom="25" subset="0-2" nls="IX_ATC_ST" />
+  <!-- ISY Farenheit UOM -->
+  <editor id="ATC_F_TEMP">
+    <range uom="17" prec="0" />
   </editor>
-  <!-- ISY Farenheit UOM with Jandy/Zodiac Aqualink limits -->
-  <editor id="ATC_TEMP">
+  <!-- ISY Celcius UOM -->
+  <editor id="ATC_C_TEMP">
+    <range uom="4" prec="0" />
+  </editor>
+  <!-- ISY Farenheit UOM with Jandy/Zodiac Aqualink limits for setpoints-->
+  <editor id="ATC_F_SETPOINT">
     <range uom="17" min="34" max="104" step="1" prec="0" />
+  </editor>
+  <!-- ISY Celcius UOM with Jandy/Zodiac Aqualink limits for setpoints -->
+  <editor id="ATC_C_SETPOINT">
+    <range uom="4" min="1" max="40" step="1" prec="0" />
+  </editor>
+  <!-- ISY Thermostat mode UOM limited to "Off" and "Heat" -->
+  <editor id="ATC_MODE">
+    <range uom="67" subset="0,1" />
+  </editor>
+  <!-- ISY Thermostat heat/cool state UOM limited to "Idle" and "Heating" -->
+  <editor id="ATC_HCS">
+    <range uom="66" subset="0,1" />
   </editor>
 </editors>

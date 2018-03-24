@@ -130,8 +130,10 @@ def status_listener(controllerAddr, statusUpdateCallback=None, logger=None):
         conn.connect((controllerAddr, _CONTROLLER_TCP_PORT))
     except (socket.error, socket.herror, socket.gaierror) as e:
         logger.error("Unable to establish TCP connection with Pool Controller. Socket error: %s", str(e))
+        conn.close()
         return False
     except:
+        conn.close()
         raise
 
     # Loop continuously and Listen for status messages over TCP connection
